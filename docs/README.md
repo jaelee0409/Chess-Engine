@@ -1,5 +1,5 @@
-Markup :  # C++ Chess Engine with Dear ImGui #
+# C++ Chess Engine with Dear ImGui
 
-Markup :  ## Overview ##
+## Overview
 
 ![Overview](https://github.com/jaelee0409/Chess-Engine/blob/main/src/assets/overview.PNG?raw=true)
