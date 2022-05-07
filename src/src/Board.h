@@ -10,6 +10,8 @@
 #define countBits(bb) __popcnt64(bb)
 #define getLSB(i, bb) _BitScanForward64(&i, bb)
 
+#define startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 typedef unsigned long long U64;
 
 static U64 pawnAttackTable[2][64];
@@ -216,6 +218,7 @@ public:
     };
     enum CastleFlags
     {
+        none = 0,
         whiteKingSide = 1,
         whiteQueenSide = 2,
         blackKingSide = 4,
@@ -227,11 +230,7 @@ public:
         printf("Board Constructor\n");
 
         // initialize initial board state
-        for (int i = 0; i < 12; ++i)
-            m_pieces[i] = 0ULL;
-
-        for (int i = 0; i < 3; ++i)
-            m_occupiedBitboard[i] = 0ULL;
+        resetBoard();
 
         // initial pawns
         setWhitePawns(a2);
@@ -293,8 +292,6 @@ public:
             }
         }
 
-        m_emptyBitboard = 0ULL;
-        //m_occupiedBitboard = 0xffffffffffffffff;
         for (int square = 0; square < 64; ++square)
         {
             pawnAttackTable[white][square] = getPawnAttackBitboard(white, square);
@@ -347,9 +344,14 @@ public:
     U64 getBlackQueens() const { return m_pieces[blackQueen]; }
     U64 getWhiteKing() const { return m_pieces[whiteKing]; }
     U64 getBlackKing() const { return m_pieces[blackKing]; }
+    int getSide() const { return m_side;  }
+    int getEnPassantSquare() const { return m_enPassant; }
+    int getCastlingRights() const { return m_castle; }
 
     void setEmptyBitboard() const;
     void setOccupiedBitboard(int side, U64 bitboard);
+    void setOccupiedBitboardSquare(int side, int square);
+    void clearOccupiedBitboardSquare(int side, int square);
 
     void setPieceBitboard(Board::PieceTypes pt);
     void setWhitePawns(int square) { setBit(m_pieces[whitePawn], square); }
@@ -364,12 +366,18 @@ public:
     void setBlackQueens(int square) { setBit(m_pieces[blackQueen], square); }
     void setWhiteKing(int square) { setBit(m_pieces[whiteKing], square); }
     void setBlackKing(int square) { setBit(m_pieces[blackKing], square); }
+    void setSide(bool side) { m_side = side; }
+    void flipSide() { m_side = !m_side; }
+    void setEnPassantSquare(int square) { m_enPassant = square; }
+    void setCastlingRights(int flags) { m_castle = flags; }
+
+    void resetBoard();
 private:
     unsigned int m_random = 1804289383;
     U64 m_pieces[12];
     U64 m_emptyBitboard;
     U64 m_occupiedBitboard[3];
-    int side = -1;
-    int enpassant = noSquare;
-    int castle;
+    bool m_side;
+    int m_enPassant;
+    int m_castle;
 };

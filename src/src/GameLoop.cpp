@@ -39,6 +39,256 @@ bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_wid
     return true;
 }
 
+bool parseFEN(Board* board, char *fen)
+{
+    // init piece placement
+    int i = 0;
+    for (int square = 0; square < 64; ++i)
+    {
+        // if current character is an alphabet, set pieces accordingly
+        if ((fen[i] >= 'a' && fen[i] <= 'z') || (fen[i] >= 'A' && fen[i] <= 'Z'))
+        {
+            switch (fen[i])
+            {
+                case 'p':
+                    // black rook
+                    board->setBlackPawns(square);
+                    board->setOccupiedBitboardSquare(board->black, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'n':
+                    // black knight
+                    board->setBlackKnights(square);
+                    board->setOccupiedBitboardSquare(board->black, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'b':
+                    // black bishop
+                    board->setBlackBishops(square);
+                    board->setOccupiedBitboardSquare(board->black, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'r':
+                    // black rook
+                    board->setBlackRooks(square);
+                    board->setOccupiedBitboardSquare(board->black, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'q':
+                    // black queen
+                    board->setBlackQueens(square);
+                    board->setOccupiedBitboardSquare(board->black, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'k':
+                    // black king
+                    board->setBlackKing(square);
+                    board->setOccupiedBitboardSquare(board->black, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'P':
+                    // white pawn
+                    board->setWhitePawns(square);
+                    board->setOccupiedBitboardSquare(board->white, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'N':
+                    // white knight
+                    board->setWhiteKnights(square);
+                    board->setOccupiedBitboardSquare(board->white, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'B':
+                    // white bishop
+                    board->setWhiteBishops(square);
+                    board->setOccupiedBitboardSquare(board->white, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'R':
+                    // white rook
+                    board->setWhiteRooks(square);
+                    board->setOccupiedBitboardSquare(board->white, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'Q':
+                    // white queen
+                    board->setWhiteQueens(square);
+                    board->setOccupiedBitboardSquare(board->white, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                case 'K':
+                    // white king
+                    board->setWhiteKing(square);
+                    board->setOccupiedBitboardSquare(board->white, square);
+                    board->setOccupiedBitboardSquare(board->both, square);
+                    square += 1;
+                    break;
+                default:
+                    printf("Wrong alphabet in the FEN string\n");
+                    return false;
+            }
+        }
+        else if (fen[i] >= '0' && fen[i] <= '9')
+        {
+            int numEmpty = fen[i] - '0';
+            square += numEmpty;
+        }
+        else if (fen[i] == '/')
+        {
+            continue;
+        }
+        else
+        {
+            printf("WEIRD CHARACTER IN FEN STRING\n");
+            return false;
+        }
+    }
+
+    // skip the first space
+    i += 1;
+
+    // init side
+    if (fen[i] == 'w')
+        board->setSide(board->white);
+    else if (fen[i] == 'b')
+        board->setSide(board->black);
+    else
+        return false;
+    i += 1;
+
+    // skip the second space
+    i += 1;
+
+    int castleFlags = board->none;
+    // init castling rights
+    while (fen[i] != ' ')
+    {
+        switch (fen[i])
+        {
+            case 'K':
+                castleFlags |= board->whiteKingSide;
+                break;
+            case 'Q':
+                castleFlags |= board->whiteQueenSide;
+                break;
+            case 'k':
+                castleFlags |= board->blackKingSide;
+                break;
+            case 'q':
+                castleFlags |= board->blackQueenSide;
+                break;
+            case '-':
+                break;
+            default:
+                return false;
+        }
+        i += 1;
+    }
+    board->setCastlingRights(castleFlags);
+
+    // skip the third space
+    i += 1;
+
+    int r, f, enPassantSquare;
+    bool first = true;
+
+    // init en passant target square
+    while (fen[i] != ' ')
+    {
+        if (fen[i] == '-')
+        {
+            board->setEnPassantSquare(board->noSquare);
+            i += 1;
+            break;
+        }
+        else
+        {
+            if (first)
+            {
+                f = fen[i] - 'a';
+                first = false;
+            }
+            else
+            {
+                r = fen[i] - '0';
+                r = 8 - r;
+                enPassantSquare = 8 * r + f;
+                board->setEnPassantSquare(enPassantSquare);
+            }
+            i += 1;
+        }
+    }
+
+    // skip the fourth space
+    i += 1;
+
+    // init halfmove clock (up to 3 digit number)
+    int halfMove = 0;
+    int numDigit = 0;
+    int firstDigit = 0;
+    int secondDigit = 0;
+    int thirdDigit = 0;
+    while (fen[i] != ' ')
+    {
+        numDigit++;
+        if (numDigit == 1)
+            firstDigit = fen[i] - '0';
+        else if (numDigit == 2)
+            secondDigit = fen[i] - '0';
+        else if (numDigit == 3)
+            thirdDigit = fen[i] - '0';
+
+        i += 1;
+    }
+    if (numDigit == 1)
+        halfMove = firstDigit;
+    else if (numDigit == 2)
+        halfMove = firstDigit * 10 + secondDigit * 1;
+    else if (numDigit == 3)
+        halfMove = firstDigit * 100 + secondDigit * 10 + thirdDigit * 1;
+    printf("halfmove: %d\n", halfMove);
+    
+    // skip the fifth space
+    i += 1;
+
+    // init fullmove counter (up to 3 digit number)
+    int fullMove = 0;
+    numDigit = 0;
+    while (fen[i] != ' ' && fen[i] != '\0')
+    {
+        numDigit++;
+        if (numDigit == 1)
+            firstDigit = fen[i] - '0';
+        else if (numDigit == 2)
+            secondDigit = fen[i] - '0';
+        else if (numDigit == 3)
+            thirdDigit = fen[i] - '0';
+
+        i += 1;
+    }
+    if (numDigit == 1)
+        fullMove = firstDigit;
+    else if (numDigit == 2)
+        fullMove = firstDigit * 10 + secondDigit * 1;
+    else if (numDigit == 3)
+        fullMove = firstDigit * 100 + secondDigit * 10 + thirdDigit * 1;
+    printf("fullmove: %d\n\n", fullMove);
+
+
+    return true;
+}
+
 void runGameLoop(GLFWwindow* window)
 {
     // Our state
@@ -135,8 +385,25 @@ void runGameLoop(GLFWwindow* window)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::SetNextWindowSize(ImVec2(870, 845));
+        ImGui::SetNextWindowSize(ImVec2(870, 870));
         ImGui::Begin("Game", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+        static char input[91] = "";
+        if (ImGui::InputText("FEN string", input, 91, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            //char* fen = input;
+            printf("Entered: %s\n\n", input);
+
+            // reset board
+            board.resetBoard();
+
+            // parse FEN
+            if (!parseFEN(&board, input))
+                printf("ERROR: INCORRECT FEN STRING\n");
+
+            // clear input text field
+            strcpy(input, "");
+        }
 
         for (int square = 0, pattern = 0; square < 64; ++square)
         {
@@ -163,14 +430,15 @@ void runGameLoop(GLFWwindow* window)
                 {
                     // getting the selected square tile
                     printf("Square: %d\n", square);
-                    // first click: select the piece
+                    // first click: select the piece on this square
                     if (!clicked)
                     {
                         fromSquare = square;
                     }
-                    // second click: move the piece
+                    // second click: move the piece to this square
                     else
                     {
+                        // check if this is a valid move
                         toSquare = square;
                     }
                     clicked = !clicked;
@@ -185,11 +453,27 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
-                    clicked ? toSquare = square : fromSquare = square;
-                    printf("fromSquare: %d, toSquare: %d\n", fromSquare, toSquare);
-                    clicked = !clicked;
+                    if (board.getSide() == board.white)
+                    {
+                        // only compute when it's its turn
+                        printf("Square: %d\n", square);
+                        // getting the selected square tile
+                        // first click: select the piece on this square
+                        if (!clicked)
+                        {
+                            fromSquare = square;
+                            // compute possible moves
+                        }
+                        // second click: move the piece to this square
+                        else
+                        {
+                            toSquare = square;
+
+                            // moved the piece, flip the side
+                            board.flipSide();
+                        }
+                        clicked = !clicked;
+                    }
                 }
             }
             else if ((board.getBlackPawns() >> square) & 1ULL)
@@ -197,8 +481,28 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    if (board.getSide() == board.black)
+                    {
+                        // only compute when it's its turn
+                        printf("Square: %d\n", square);
+                        // getting the selected square tile
+                        // first click: select the piece on this square
+                        if (!clicked)
+                        {
+                            fromSquare = square;
+                            // compute possible moves
+                        }
+                        // second click: move the piece to this square
+                        else
+                        {
+                            toSquare = square;
+
+                            // moved the piece, flip the side
+                            board.flipSide();
+                        }
+                        clicked = !clicked;
+                        board.flipSide();
+                    }
                 }
             }
             else if ((board.getWhiteKnights() >> square) & 1ULL)

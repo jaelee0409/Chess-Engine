@@ -428,3 +428,28 @@ void Board::setOccupiedBitboard(int side, U64 bitboard)
 {
     m_occupiedBitboard[side] |= bitboard;
 }
+
+void Board::setOccupiedBitboardSquare(int side, int square)
+{
+    setBit(m_occupiedBitboard[side], square);
+}
+
+void Board::clearOccupiedBitboardSquare(int side, int square)
+{
+    popBit(m_occupiedBitboard[side], square);
+}
+
+void Board::resetBoard()
+{
+    for (int i = 0; i < 12; ++i)
+        m_pieces[i] = 0ULL;
+
+    for (int i = 0; i < 3; ++i)
+        m_occupiedBitboard[i] = 0ULL;
+
+    m_emptyBitboard = 0ULL;
+
+    m_side = white;
+    m_enPassant = noSquare;
+    m_castle = none;
+}

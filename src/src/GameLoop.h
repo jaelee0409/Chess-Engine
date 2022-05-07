@@ -5,6 +5,7 @@
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
+#include <string>
 
 void runGameLoop(GLFWwindow* window);
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height);

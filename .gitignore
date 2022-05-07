@@ -8,10 +8,10 @@ imgui.ini
 *.o
 *.obj
 *.exe
-examples/build/*
-examples/*/Debug/*
-examples/*/Release/*
-examples/*/x64/*
+src/*/build/*
+src/*/Debug/*
+src/*/Release/*
+src/*/x64/*
 
 ## Visual Studio artifacts
 .vs
@@ -34,20 +34,20 @@ project.xcworkspace
 xcuserdata
 
 ## Emscripten artifacts
-examples/*.o.tmp
-examples/*.out.js
-examples/*.out.wasm
-examples/example_emscripten_opengl3/web/*
-examples/example_emscripten_wgpu/web/*
+src/*.o.tmp
+src/*.out.js
+src/*.out.wasm
+src/example_emscripten_opengl3/web/*
+src/example_emscripten_wgpu/web/*
 
 ## JetBrains IDE artifacts
 .idea
 cmake-build-*
 
 ## Unix executables from our example Makefiles
-examples/example_glfw_opengl2/example_glfw_opengl2
-examples/example_glfw_opengl3/example_glfw_opengl3
-examples/example_glut_opengl2/example_glut_opengl2
-examples/example_null/example_null
-examples/example_sdl_opengl2/example_sdl_opengl2
-examples/example_sdl_opengl3/example_sdl_opengl3
+src/src/example_glfw_opengl2
+src/src/example_glfw_opengl3
+src/src/example_glut_opengl2
+src/src/example_null
+src/src/example_sdl_opengl2
+src/src/example_sdl_opengl3
