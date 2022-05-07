@@ -279,16 +279,16 @@ public:
         for (int i = 0; i < 12; ++i)
         {
             // both
-            setOccupiedBitboard(2, m_pieces[i]);
+            setOccupiedBitboard(both, m_pieces[i]);
             // white pieces
             if (i % 2 == 0)
             {
-                setOccupiedBitboard(0, m_pieces[i]);
+                setOccupiedBitboard(white, m_pieces[i]);
             }
             // black pieces
             else
             {
-                setOccupiedBitboard(1, m_pieces[i]);
+                setOccupiedBitboard(black, m_pieces[i]);
             }
         }
 
@@ -299,11 +299,13 @@ public:
             knightAttackTable[square] = getKnightAttackBitboard(square);
             kingAttackTable[square] = getKingAttackBitboard(square);
         }
+
         //initMagicNumbers();
         initSliderAttacks(0);
         initSliderAttacks(1);
     }
 
+    // piece possible attacks methods
     U64 getPawnAttackBitboard(int side, int square);
     U64 getKnightAttackBitboard(int square);
 
@@ -315,10 +317,13 @@ public:
     U64 getRookAttackBitboardRuntime(U64 board, int square);
     U64 getRookAttackBitboard(U64 occ, int square);
 
+    U64 getQueenAttackBitboard(U64 occ, int square);
+    U64 getKingAttackBitboard(int square);
     void initSliderAttacks(bool isBishop);
 
-    U64 getKingAttackBitboard(int square);
+    bool isSquareAttacked(int side, int square);
 
+    // magic number methods
     unsigned int getRandomU32();
     U64 getRandomU64();
     U64 generateMagicNumber();
@@ -328,6 +333,7 @@ public:
     U64 setOccupancy(U64 maskBitboard, int index, int maskBitCount);
     void printBitboard(U64 bitboard);
 
+    // getters
     U64 getEmptyBitboard() const;
     U64 getOccupiedBitboard(int side) const { return m_occupiedBitboard[side]; };
 
@@ -344,10 +350,11 @@ public:
     U64 getBlackQueens() const { return m_pieces[blackQueen]; }
     U64 getWhiteKing() const { return m_pieces[whiteKing]; }
     U64 getBlackKing() const { return m_pieces[blackKing]; }
-    int getSide() const { return m_side;  }
+    int getSide() const { return m_side; }
     int getEnPassantSquare() const { return m_enPassant; }
     int getCastlingRights() const { return m_castle; }
 
+    // setters
     void setEmptyBitboard() const;
     void setOccupiedBitboard(int side, U64 bitboard);
     void setOccupiedBitboardSquare(int side, int square);

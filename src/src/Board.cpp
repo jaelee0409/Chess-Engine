@@ -218,6 +218,55 @@ U64 Board::getRookAttackBitboard(U64 occ, int square)
     return rookAttackTable[square][occ];
 }
 
+U64 Board::getQueenAttackBitboard(U64 occ, int square)
+{
+    U64 queenAttackBitboard = 0ULL;
+
+    U64 bishopOcc = occ;
+    U64 rookOcc = occ;
+
+    // add bishop attacks with current board occupancy
+    bishopOcc &= bishopAttackMask[square];
+    bishopOcc *= bishopMagicNumbers[square];
+    bishopOcc >>= (64 - bishopRelevantBitCount[square]);
+    queenAttackBitboard = bishopAttackTable[square][bishopOcc];
+
+    // add rook attacks with current board occupancy
+    rookOcc &= rookAttackMask[square];
+    rookOcc *= rookMagicNumbers[square];
+    rookOcc >>= (64 - rookRelevantBitCount[square]);
+    queenAttackBitboard |= rookAttackTable[square][rookOcc];
+
+    return queenAttackBitboard;
+}
+
+U64 Board::getKingAttackBitboard(int square)
+{
+    U64 attackBitboard = 0ULL;
+    U64 bitboard = 0ULL;
+    setBit(bitboard, square);
+
+    // if the king is not on A file, up left and left and down left is possible
+    if (bitboard & notAfile)
+    {
+        attackBitboard |= (bitboard >> 9);
+        attackBitboard |= (bitboard >> 1);
+        attackBitboard |= (bitboard << 7);
+    }
+    // if the king is not on H file, up right and right and down right is possible
+    if (bitboard & notHfile)
+    {
+        attackBitboard |= (bitboard >> 7);
+        attackBitboard |= (bitboard << 1);
+        attackBitboard |= (bitboard << 9);
+    }
+    // up and down is possible
+    attackBitboard |= (bitboard >> 8);
+    attackBitboard |= (bitboard << 8);
+
+    return attackBitboard;
+}
+
 void Board::initSliderAttacks(bool isBishop)
 {
     // init slider pieces' masks
@@ -253,29 +302,45 @@ void Board::initSliderAttacks(bool isBishop)
     }
 }
 
-U64 Board::getKingAttackBitboard(int square)
+bool Board::isSquareAttacked(int side, int square)
 {
-    U64 attackBitboard = 0ULL;
-    U64 bitboard = 0ULL;
-    setBit(bitboard, square);
-
-    // if the king is not on A file, left is possible
-    if (bitboard & notAfile)
+    // white
+    if (side == white)
     {
-        attackBitboard |= (bitboard >> 1);
+        if (pawnAttackTable[black][square] & m_pieces[whitePawn])
+            return true;
+        else if (knightAttackTable[square] & m_pieces[whiteKnight])
+            return true;
+        else if (getBishopAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[whiteBishop])
+            return true;
+        else if (getRookAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[whiteRook])
+            return true;
+        else if (getQueenAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[whiteQueen])
+            return true;
+        else if (kingAttackTable[square] & m_pieces[whiteKing])
+            return true;
     }
-    // if the king is not on H file, right is possible
-    if (bitboard & notHfile)
+    // black
+    else
     {
-        attackBitboard |= (bitboard << 1);
+        if (pawnAttackTable[white][square] & m_pieces[blackPawn])
+            return true;
+        else if (knightAttackTable[square] & m_pieces[blackKnight])
+            return true;
+        else if (getBishopAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[blackBishop])
+            return true;
+        else if (getRookAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[blackRook])
+            return true;
+        else if (getQueenAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[blackQueen])
+            return true;
+        else if (kingAttackTable[square] & m_pieces[blackKing])
+            return true;
     }
-    // up and down is possible
-    attackBitboard |= (bitboard >> 8);
-    attackBitboard |= (bitboard << 8);
 
-    return attackBitboard;
+    return false;
 }
 
+// magic number methods
 unsigned int Board::getRandomU32()
 {
     unsigned int number = m_random;

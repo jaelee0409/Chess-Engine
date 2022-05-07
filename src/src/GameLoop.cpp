@@ -355,7 +355,7 @@ void runGameLoop(GLFWwindow* window)
     //setBit(occ, board.c5);
     //board.printBitboard(occ);
     //board.printBitboard(board.getBishopAttackBitboard(occ, square));
-    //board.printBitboard(board.getRookAttackBitboard(occ, square));
+    //board.printBitboard(board.getQueenAttackBitboard(occ, board.e5));
 
     /*printf("WHITE PIECES ON BOARD\n\n");
     board.printBitboard(board.getOccupiedBitboard(0));
@@ -431,17 +431,17 @@ void runGameLoop(GLFWwindow* window)
                     // getting the selected square tile
                     printf("Square: %d\n", square);
                     // first click: select the piece on this square
-                    if (!clicked)
-                    {
-                        fromSquare = square;
-                    }
-                    // second click: move the piece to this square
-                    else
-                    {
-                        // check if this is a valid move
-                        toSquare = square;
-                    }
-                    clicked = !clicked;
+                    //if (!clicked)
+                    //{
+                    //    fromSquare = square;
+                    //}
+                    //// second click: move the piece to this square
+                    //else
+                    //{
+                    //    // check if this is a valid move
+                    //    toSquare = square;
+                    //}
+                    //clicked = !clicked;
                 }
                 ImGui::PopID();
                 continue;
@@ -453,27 +453,27 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    if (board.getSide() == board.white)
-                    {
-                        // only compute when it's its turn
-                        printf("Square: %d\n", square);
-                        // getting the selected square tile
-                        // first click: select the piece on this square
-                        if (!clicked)
-                        {
-                            fromSquare = square;
-                            // compute possible moves
-                        }
-                        // second click: move the piece to this square
-                        else
-                        {
-                            toSquare = square;
+                    //if (board.getSide() == board.white)
+                    //{
+                    //    // only compute when it's its turn
+                    //    printf("Square: %d\n", square);
+                    //    // getting the selected square tile
+                    //    // first click: select the piece on this square
+                    //    if (!clicked)
+                    //    {
+                    //        fromSquare = square;
+                    //        // compute possible moves
+                    //    }
+                    //    // second click: move the piece to this square
+                    //    else
+                    //    {
+                    //        toSquare = square;
 
-                            // moved the piece, flip the side
-                            board.flipSide();
-                        }
-                        clicked = !clicked;
-                    }
+                    //        // moved the piece, flip the side
+                    //        board.flipSide();
+                    //    }
+                    //    clicked = !clicked;
+                    //}
                 }
             }
             else if ((board.getBlackPawns() >> square) & 1ULL)
@@ -481,28 +481,28 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    if (board.getSide() == board.black)
-                    {
-                        // only compute when it's its turn
-                        printf("Square: %d\n", square);
-                        // getting the selected square tile
-                        // first click: select the piece on this square
-                        if (!clicked)
-                        {
-                            fromSquare = square;
-                            // compute possible moves
-                        }
-                        // second click: move the piece to this square
-                        else
-                        {
-                            toSquare = square;
+                    //if (board.getSide() == board.black)
+                    //{
+                    //    // only compute when it's its turn
+                    //    printf("Square: %d\n", square);
+                    //    // getting the selected square tile
+                    //    // first click: select the piece on this square
+                    //    if (!clicked)
+                    //    {
+                    //        fromSquare = square;
+                    //        // compute possible moves
+                    //    }
+                    //    // second click: move the piece to this square
+                    //    else
+                    //    {
+                    //        toSquare = square;
 
-                            // moved the piece, flip the side
-                            board.flipSide();
-                        }
-                        clicked = !clicked;
-                        board.flipSide();
-                    }
+                    //        // moved the piece, flip the side
+                    //        board.flipSide();
+                    //    }
+                    //    clicked = !clicked;
+                    //    board.flipSide();
+                    //}
                 }
             }
             else if ((board.getWhiteKnights() >> square) & 1ULL)
