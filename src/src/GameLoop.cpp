@@ -200,7 +200,7 @@ bool parseFEN(Board* board, char *fen)
     // skip the third space
     i += 1;
 
-    int r, f, enPassantSquare;
+    int r = -1, f = -1;
     bool first = true;
 
     // init en passant target square
@@ -223,8 +223,7 @@ bool parseFEN(Board* board, char *fen)
             {
                 r = fen[i] - '0';
                 r = 8 - r;
-                enPassantSquare = 8 * r + f;
-                board->setEnPassantSquare(enPassantSquare);
+                board->setEnPassantSquare(8 * r + f);
             }
             i += 1;
         }
@@ -232,6 +231,8 @@ bool parseFEN(Board* board, char *fen)
 
     // skip the fourth space
     i += 1;
+
+    // TODO: Halfmove clock and Fullmove counter
 
     // init halfmove clock (up to 3 digit number)
     int halfMove = 0;
@@ -295,15 +296,19 @@ void runGameLoop(GLFWwindow* window)
     bool show_demo_window = false;
     //bool show_another_window = false;
 
+    // init styles
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
     const ImVec2 BOARD_TILE = ImVec2(100.0f, 100.0f);
     const ImVec2 uv0 = ImVec2(0.0f, 0.0f);
     const ImVec2 uv1 = ImVec2(1.0f, 1.0f);
     const ImVec4 lightTile = ImVec4(0.9f, 0.8f, 0.7f, 1.0f);
     const ImVec4 darkTile = ImVec4(0.8f, 0.5f, 0.3f, 1.0f);
+    const ImVec4 possibleCaptureTile = ImVec4(0.7f, 0.1f, 0.1f, 1.0f);
+    const ImVec4 possibleMoveTile = ImVec4(0.66f, 0.66f, 0.66f, 1.0f);
+    const ImVec4 selectedTile = ImVec4(0.77f, 0.63f, 0.32f, 1.0f);
     const ImVec4 noTint = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
+    // load images
     int pieceImageWidth = 0;
     int pieceImageHeight = 0;
     GLuint whitePawnImageTexture = 0;
@@ -334,42 +339,15 @@ void runGameLoop(GLFWwindow* window)
     ret &= LoadTextureFromFile("../assets/blank.png", &blankTexture, &pieceImageWidth, &pieceImageHeight);
     IM_ASSERT(ret);
 
-
-
-    //selected[square] ^= 1;
-    //flipBit(board1, square);
-
-    //board.printBitboard(board.getPawnAttackBitboard(1, square));
-    //board.printBitboard(board.getKnightAttackBitboard(square));
-    //board.printBitboard(board.getBishopMaskBitboard(square));
-    //board.printBitboard(board.getBishopAttackBitboardRuntime(board1, square));
-    //board.printBitboard(board.getRookMaskBitboard(square));
-    //board.printBitboard(board.getRookAttackBitboardRuntime(board1, square));
-    //board.printBitboard(board.getKingAttackBitboard(square));
-    //printf("%u\n", (int)countBits(board1));
-    //unsigned long index = 0UL;
-    //getLSB(index, board1);
-    //printf("%d\n", index);
-
-    //U64 occ = 0ULL;
-    //setBit(occ, board.c5);
-    //board.printBitboard(occ);
-    //board.printBitboard(board.getBishopAttackBitboard(occ, square));
-    //board.printBitboard(board.getQueenAttackBitboard(occ, board.e5));
-
-    /*printf("WHITE PIECES ON BOARD\n\n");
-    board.printBitboard(board.getOccupiedBitboard(0));
-    printf("BLACK PIECES ON BOARD\n\n");
-    board.printBitboard(board.getOccupiedBitboard(1));
-    printf("ALL PIECES ON BOARD\n\n");
-    board.printBitboard(board.getOccupiedBitboard(2));*/
-
+    // init game state
     Board board;
-    bool clicked = false;
+    bool clickedOnPiece = false;
     int fromSquare = -1;
     int toSquare = -1;
+    Board::PieceTypes pieceSelected = board.whitePawn;
+    U64 possibleMoves = 0ULL;
+    U64 possibleCaptures = 0ULL;
 
-    bool isStart = 1;
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
@@ -411,8 +389,8 @@ void runGameLoop(GLFWwindow* window)
 
         ImGui::Separator();
 
-        float rankPosY;
-        float filePosX;
+        float rankPosY = 0.0f;
+        float filePosX = 0.0f;
         for (int square = 0, pattern = 0; square < 64; ++square)
         {
             ImGui::PushID(square);
@@ -428,14 +406,14 @@ void runGameLoop(GLFWwindow* window)
                 filePosX = ImGui::GetCursorPosX();
             }
             
-
+            // 8 files in a rank
             if ((square % 8) > 0)
             {
                 pattern++;
                 ImGui::SameLine();
             }
             ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), rankPosY));
-                    
+
             ImVec4 bg;
             // draw tile
             if (pattern % 2 == 0)
@@ -443,26 +421,41 @@ void runGameLoop(GLFWwindow* window)
             else
                 bg = darkTile;
 
+            if ((possibleMoves >> square) & 1ULL)
+                bg = possibleMoveTile;
+            else if ((possibleCaptures >> square) & 1ULL)
+                bg = possibleCaptureTile;
+
             // empty tile
             if (((board.getOccupiedBitboard(board.both) >> square) & 1ULL) == 0)
             {
                 //ImGui::Image((void*)(intptr_t)blankTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blankTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
-                    // first click: select the piece on this square
-                    //if (!clicked)
-                    //{
-                    //    fromSquare = square;
-                    //}
-                    //// second click: move the piece to this square
-                    //else
-                    //{
-                    //    // check if this is a valid move
-                    //    toSquare = square;
-                    //}
-                    //clicked = !clicked;
+                    // if no piece has been clicked
+                    if (!clickedOnPiece)
+                    {
+                        // no piece, do nothing
+                        printf("DO NOTHING\n");
+                    }
+                    // if clicked after clicking a piece first
+                    else
+                    {
+                        toSquare = square;
+                        // check if this is a valid move
+                        if (true)
+                        {
+                            // move the piece to an empty square
+                            printf("MOVED A PIECE TO AN EMPTY SQUARE %d %d\n", pieceSelected, square);
+                            board.setPieceBitboard(pieceSelected, toSquare);
+                            board.popPieceBitboard(pieceSelected, fromSquare);
+                            board.updateOccupiedBitboards();
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            board.flipSide();
+                        }
+                    }
                 }
                 ImGui::PopID();
                 continue;
@@ -474,24 +467,58 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
+                    // Generate moves
+                    // white turn clicking on a white pawn
                     if (board.getSide() == board.white)
                     {
-                        // first click: select the piece on this square and generate pawn moves
-                        if (!clicked)
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece)
                         {
                             fromSquare = square;
+                            pieceSelected = board.whitePawn;
                             // compute possible moves or captures
+                            printf("SHOW POSSIBLE MOVES FOR WHITE PAWN %d\n", square);
 
+                            possibleCaptures = pawnAttackTable[board.white][square] & board.getOccupiedBitboard(board.black);
+                            printf("POSSIBLE CAPTURES\n");
                         }
-                        // second click: move the piece to this square
+                        // can't capture your own piece
                         else
                         {
-                            toSquare = square;
-
-                            // moved the piece, flip the side
-                            board.flipSide();
+                            printf("CANCEL - WHITE CANNOT CAPTURE WHITE PIECES\n");
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
                         }
-                        clicked = !clicked;
+                        clickedOnPiece = !clickedOnPiece;
+                    }
+                    // black turn clicking on a white pawn
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture this pawn
+                            // check if it is a valid capture
+                            if (true)
+                            {
+                                printf("CAPTURING WHITE PAWN\n");
+                                board.popPieceBitboard(toSquare);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, toSquare);
+                                board.updateOccupiedBitboards();
+                                clickedOnPiece = false;
+                                possibleMoves = 0ULL;
+                                possibleCaptures = 0ULL;
+                                board.flipSide();
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n");
+                            }
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n");
+                        }
                     }
                 }
             }
@@ -500,28 +527,59 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    //if (board.getSide() == board.black)
-                    //{
-                    //    // only compute when it's its turn
-                    //    printf("Square: %d\n", square);
-                    //    // getting the selected square tile
-                    //    // first click: select the piece on this square
-                    //    if (!clicked)
-                    //    {
-                    //        fromSquare = square;
-                    //        // compute possible moves
-                    //    }
-                    //    // second click: move the piece to this square
-                    //    else
-                    //    {
-                    //        toSquare = square;
+                    // Generate moves
+                    // black turn clicking on a black pawn
+                    if (board.getSide() == board.black)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.blackPawn;
+                            // compute possible moves or captures
+                            printf("SHOW POSSIBLE MOVES FOR BLACK PAWN %d\n", square);
 
-                    //        // moved the piece, flip the side
-                    //        board.flipSide();
-                    //    }
-                    //    clicked = !clicked;
-                    //    board.flipSide();
-                    //}
+                            possibleCaptures = pawnAttackTable[board.black][square] & board.getOccupiedBitboard(board.white);
+                            printf("POSSIBLE CAPTURES\n");
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - WHITE CANNOT CAPTURE WHITE PIECES\n");
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                        }
+                        clickedOnPiece = !clickedOnPiece;
+                    }
+                    // white turn clicking on a black pawn
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture this pawn
+                            // check if it is a valid capture
+                            if (true)
+                            {
+                                printf("CAPTURING WHITE PAWN\n");
+                                board.popPieceBitboard(toSquare);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, toSquare);
+                                board.updateOccupiedBitboards();
+                                clickedOnPiece = false;
+                                possibleMoves = 0ULL;
+                                possibleCaptures = 0ULL;
+                                board.flipSide();
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n");
+                            }
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n");
+                        }
+                    }
                 }
             }
             else if ((board.getWhiteKnights() >> square) & 1ULL)

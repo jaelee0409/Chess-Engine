@@ -276,21 +276,7 @@ public:
         setWhiteKing(e1);
         setBlackKing(e8);
 
-        for (int i = 0; i < 12; ++i)
-        {
-            // both
-            setOccupiedBitboard(both, m_pieces[i]);
-            // white pieces
-            if (i % 2 == 0)
-            {
-                setOccupiedBitboard(white, m_pieces[i]);
-            }
-            // black pieces
-            else
-            {
-                setOccupiedBitboard(black, m_pieces[i]);
-            }
-        }
+        updateOccupiedBitboards();
 
         for (int square = 0; square < 64; ++square)
         {
@@ -307,6 +293,7 @@ public:
 
     // piece possible attacks methods
     U64 getPawnAttackBitboard(int side, int square);
+    U64 getPawnMoveBitboard(int side, int square);
     U64 getKnightAttackBitboard(int square);
 
     U64 getBishopMaskBitboard(int square);
@@ -360,8 +347,12 @@ public:
     void setOccupiedBitboard(int side, U64 bitboard);
     void setOccupiedBitboardSquare(int side, int square);
     void clearOccupiedBitboardSquare(int side, int square);
+    void updateOccupiedBitboards();
+    void resetOccupiedBitboards();
 
-    void setPieceBitboard(Board::PieceTypes pt);
+    void setPieceBitboard(Board::PieceTypes pt, int square) { setBit(m_pieces[pt], square); };
+    void popPieceBitboard(int square) { for (int i = 0; i < 12; ++i) popBit(m_pieces[i], square); };
+    void popPieceBitboard(Board::PieceTypes pt, int square) { popBit(m_pieces[pt], square); };
     void setWhitePawns(int square) { setBit(m_pieces[whitePawn], square); }
     void setBlackPawns(int square) { setBit(m_pieces[blackPawn], square); }
     void setWhiteKnights(int square) { setBit(m_pieces[whiteKnight], square); }

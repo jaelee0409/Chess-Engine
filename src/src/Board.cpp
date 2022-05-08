@@ -30,6 +30,22 @@ U64 Board::getPawnAttackBitboard(int side, int square)
     return attackBitboard;
 }
 
+U64 Board::getPawnMoveBitboard(int side, int square)
+{
+    U64 moveBitboard = 0ULL;
+    // white turn
+    if (!side)
+    {
+    }
+    // black turn
+    else
+    {
+
+    }
+
+    return moveBitboard;
+}
+
 U64 Board::getKnightAttackBitboard(int square)
 {
     U64 attackBitboard = 0ULL;
@@ -506,13 +522,39 @@ void Board::clearOccupiedBitboardSquare(int side, int square)
     popBit(m_occupiedBitboard[side], square);
 }
 
+void Board::updateOccupiedBitboards()
+{
+    resetOccupiedBitboards();
+
+    for (int i = 0; i < 12; ++i)
+    {
+        // both
+        setOccupiedBitboard(both, m_pieces[i]);
+        // white pieces
+        if (i % 2 == 0)
+        {
+            setOccupiedBitboard(white, m_pieces[i]);
+        }
+        // black pieces
+        else
+        {
+            setOccupiedBitboard(black, m_pieces[i]);
+        }
+    }
+}
+
+void Board::resetOccupiedBitboards()
+{
+    for (int i = 0; i < 3; ++i)
+        m_occupiedBitboard[i] = 0ULL;
+}
+
 void Board::resetBoard()
 {
     for (int i = 0; i < 12; ++i)
         m_pieces[i] = 0ULL;
 
-    for (int i = 0; i < 3; ++i)
-        m_occupiedBitboard[i] = 0ULL;
+    resetOccupiedBitboards();
 
     m_emptyBitboard = 0ULL;
 
