@@ -292,7 +292,7 @@ bool parseFEN(Board* board, char *fen)
 void runGameLoop(GLFWwindow* window)
 {
     // Our state
-    //bool show_demo_window = true;
+    bool show_demo_window = false;
     //bool show_another_window = false;
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -385,9 +385,10 @@ void runGameLoop(GLFWwindow* window)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::SetNextWindowSize(ImVec2(870, 870));
+        ImGui::SetNextWindowSize(ImVec2(900, 905));
         ImGui::Begin("Game", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+        // FEN string parser input text field
         static char input[91] = "";
         if (ImGui::InputText("FEN string", input, 91, ImGuiInputTextFlags_EnterReturnsTrue))
         {
@@ -405,15 +406,35 @@ void runGameLoop(GLFWwindow* window)
             strcpy(input, "");
         }
 
+        // show who's turn it is right now
+        ImGui::Text("TURN: %s", board.getSide() ? "BLACK" : "WHITE");
+
+        ImGui::Separator();
+
+        float rankPosY;
+        float filePosX;
         for (int square = 0, pattern = 0; square < 64; ++square)
         {
             ImGui::PushID(square);
+
+            // show ranks
+            if (square % 8 == 0)
+            {
+                rankPosY = ImGui::GetCursorPosY();
+                ImVec2 rankPos = ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 40.0f);
+                ImGui::SetCursorPos(rankPos);
+                ImGui::Text("%d", 8 - (square / 8));
+                ImGui::SameLine();
+                filePosX = ImGui::GetCursorPosX();
+            }
+            
 
             if ((square % 8) > 0)
             {
                 pattern++;
                 ImGui::SameLine();
             }
+            ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), rankPosY));
                     
             ImVec4 bg;
             // draw tile
@@ -453,27 +474,25 @@ void runGameLoop(GLFWwindow* window)
                 //ImGui::Image((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    //if (board.getSide() == board.white)
-                    //{
-                    //    // only compute when it's its turn
-                    //    printf("Square: %d\n", square);
-                    //    // getting the selected square tile
-                    //    // first click: select the piece on this square
-                    //    if (!clicked)
-                    //    {
-                    //        fromSquare = square;
-                    //        // compute possible moves
-                    //    }
-                    //    // second click: move the piece to this square
-                    //    else
-                    //    {
-                    //        toSquare = square;
+                    if (board.getSide() == board.white)
+                    {
+                        // first click: select the piece on this square and generate pawn moves
+                        if (!clicked)
+                        {
+                            fromSquare = square;
+                            // compute possible moves or captures
 
-                    //        // moved the piece, flip the side
-                    //        board.flipSide();
-                    //    }
-                    //    clicked = !clicked;
-                    //}
+                        }
+                        // second click: move the piece to this square
+                        else
+                        {
+                            toSquare = square;
+
+                            // moved the piece, flip the side
+                            board.flipSide();
+                        }
+                        clicked = !clicked;
+                    }
                 }
             }
             else if ((board.getBlackPawns() >> square) & 1ULL)
@@ -599,11 +618,14 @@ void runGameLoop(GLFWwindow* window)
             ImGui::PopID();
         }
 
+        ImGui::SetCursorPos(ImVec2(filePosX, ImGui::GetCursorPosY()));
+        ImGui::Text("\t   a\t\t\t   b\t\t\t  c\t\t\t  d\t\t\t   e\t\t\t  f\t\t\t  g\t\t\t   h");
+
         ImGui::End();
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        //if (show_demo_window)
-        //    ImGui::ShowDemoWindow(&show_demo_window);
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
 
         //// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         //{

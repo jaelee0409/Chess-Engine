@@ -321,6 +321,7 @@ public:
     U64 getKingAttackBitboard(int square);
     void initSliderAttacks(bool isBishop);
 
+    // move generator methods
     bool isSquareAttacked(int side, int square);
 
     // magic number methods

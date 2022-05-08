@@ -302,6 +302,8 @@ void Board::initSliderAttacks(bool isBishop)
     }
 }
 
+// move generator methods
+
 bool Board::isSquareAttacked(int side, int square)
 {
     // white
