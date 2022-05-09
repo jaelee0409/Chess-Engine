@@ -135,7 +135,7 @@ bool parseFEN(Board* board, char *fen)
                     square += 1;
                     break;
                 default:
-                    printf("Wrong alphabet in the FEN string\n");
+                    printf("Wrong alphabet in the FEN string\n"); // DEBUG
                     return false;
             }
         }
@@ -150,10 +150,11 @@ bool parseFEN(Board* board, char *fen)
         }
         else
         {
-            printf("WEIRD CHARACTER IN FEN STRING\n");
+            printf("WEIRD CHARACTER IN FEN STRING\n"); // DEBUG
             return false;
         }
     }
+    board->updateEmptyBitboards();
 
     // skip the first space
     i += 1;
@@ -258,7 +259,7 @@ bool parseFEN(Board* board, char *fen)
         halfMove = firstDigit * 10 + secondDigit * 1;
     else if (numDigit == 3)
         halfMove = firstDigit * 100 + secondDigit * 10 + thirdDigit * 1;
-    printf("halfmove: %d\n", halfMove);
+    printf("halfmove: %d\n", halfMove); // DEBUG
     
     // skip the fifth space
     i += 1;
@@ -284,7 +285,7 @@ bool parseFEN(Board* board, char *fen)
         fullMove = firstDigit * 10 + secondDigit * 1;
     else if (numDigit == 3)
         fullMove = firstDigit * 100 + secondDigit * 10 + thirdDigit * 1;
-    printf("fullmove: %d\n\n", fullMove);
+    printf("fullmove: %d\n\n", fullMove); // DEBUG
 
 
     return true;
@@ -343,7 +344,7 @@ void runGameLoop(GLFWwindow* window)
     Board board;
     bool clickedOnPiece = false;
     int fromSquare = -1;
-    int toSquare = -1;
+    //int toSquare = -1;
     Board::PieceTypes pieceSelected = board.whitePawn;
     U64 possibleMoves = 0ULL;
     U64 possibleCaptures = 0ULL;
@@ -371,17 +372,24 @@ void runGameLoop(GLFWwindow* window)
         if (ImGui::InputText("FEN string", input, 91, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             //char* fen = input;
-            printf("Entered: %s\n\n", input);
+            printf("Entered: %s\n\n", input); // DEBUG
 
             // reset board
             board.resetBoard();
 
             // parse FEN
             if (!parseFEN(&board, input))
-                printf("ERROR: INCORRECT FEN STRING\n");
+                printf("ERROR: INCORRECT FEN STRING\n"); // DEBUG
 
             // clear input text field
             strcpy(input, "");
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("DEBUG"))
+        {
+            // DEBUG
+            printf("CURRENT EN PASSANT SQUARE %d\n", board.getEnPassantSquare());
         }
 
         // show who's turn it is right now
@@ -425,251 +433,1002 @@ void runGameLoop(GLFWwindow* window)
                 bg = possibleMoveTile;
             else if ((possibleCaptures >> square) & 1ULL)
                 bg = possibleCaptureTile;
+            else if (fromSquare == square)
+                bg = selectedTile;
 
             // empty tile
             if (((board.getOccupiedBitboard(board.both) >> square) & 1ULL) == 0)
             {
-                //ImGui::Image((void*)(intptr_t)blankTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blankTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
                     // if no piece has been clicked
                     if (!clickedOnPiece)
                     {
-                        // no piece, do nothing
-                        printf("DO NOTHING\n");
+                        printf("DO NOTHING\n"); // DEBUG
                     }
-                    // if clicked after clicking a piece first
+                    // if empty square is clicked after clicking on a piece first, validate the move
                     else
                     {
-                        toSquare = square;
-                        // check if this is a valid move
-                        if (true)
+                        // check if this is one of the possible moves
+                        if ((possibleMoves >> square) & 1ULL)
                         {
                             // move the piece to an empty square
-                            printf("MOVED A PIECE TO AN EMPTY SQUARE %d %d\n", pieceSelected, square);
-                            board.setPieceBitboard(pieceSelected, toSquare);
+                            printf("MOVED A PIECE TO AN EMPTY SQUARE %d %d\n", pieceSelected, square); // DEBUG
+                            board.setPieceBitboard(pieceSelected, square);
                             board.popPieceBitboard(pieceSelected, fromSquare);
                             board.updateOccupiedBitboards();
-                            clickedOnPiece = false;
-                            possibleMoves = 0ULL;
-                            possibleCaptures = 0ULL;
+                            board.updateEmptyBitboards();
+
+                            // switch side
                             board.flipSide();
+
+                            // set en passant square
+                            if (pieceSelected == board.whitePawn)
+                            {
+                                if (fromSquare - square == 16)
+                                {
+                                    printf("SETTING EN PASSANT SQUARE\n"); // DEBUG
+                                    board.setEnPassantSquare(square + 8);
+                                }
+                                else
+                                {
+                                    board.setEnPassantSquare(board.noSquare);
+                                }
+                            }
+                            else if (pieceSelected == board.blackPawn)
+                            {
+                                if (square - fromSquare == 16)
+                                {
+                                    printf("SETTING EN PASSANT SQUARE\n"); // DEBUG
+                                    board.setEnPassantSquare(square - 8);
+                                }
+                                else
+                                {
+                                    board.setEnPassantSquare(board.noSquare);
+                                }
+                            }
+                            else
+                            {
+                                board.setEnPassantSquare(board.noSquare);
+                            }
                         }
+                        else
+                        {
+                            // check en passant
+                            if (square == board.getEnPassantSquare())
+                            {
+                                if (pieceSelected == board.whitePawn)
+                                {
+                                    if (fromSquare - square == 7 || fromSquare - square == 9)
+                                    {
+                                        printf("EN PASSANT\n"); // DEBUG
+                                        board.setPieceBitboard(pieceSelected, square);
+                                        board.popPieceBitboard(pieceSelected, fromSquare);
+                                        board.popPieceBitboard(board.blackPawn, square + 8);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+
+                                        // switch side
+                                        board.flipSide();
+                                    }
+                                }
+                                else if (pieceSelected == board.blackPawn)
+                                {
+                                    if (square - fromSquare == 7 || square - fromSquare == 9)
+                                    {
+                                        printf("EN PASSANT\n"); // DEBUG
+                                        board.setPieceBitboard(pieceSelected, square);
+                                        board.popPieceBitboard(pieceSelected, fromSquare);
+                                        board.popPieceBitboard(board.whitePawn, square - 8);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+
+                                        // switch side
+                                        board.flipSide();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                printf("INVALID MOVE\n"); // DEBUG
+                            }
+                        }
+
+                        // reset move state
+                        clickedOnPiece = false;
+                        possibleMoves = 0ULL;
+                        possibleCaptures = 0ULL;
+                        fromSquare = -1;
                     }
                 }
                 ImGui::PopID();
                 continue;
             }
-                
+
             // draw piece
             if ((board.getWhitePawns() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whitePawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // Generate moves
                     // white turn clicking on a white pawn
                     if (board.getSide() == board.white)
                     {
                         // hasn't clicked on a piece yet
-                        if (!clickedOnPiece)
+                        if (!clickedOnPiece || fromSquare != square)
                         {
                             fromSquare = square;
                             pieceSelected = board.whitePawn;
-                            // compute possible moves or captures
-                            printf("SHOW POSSIBLE MOVES FOR WHITE PAWN %d\n", square);
-
+                            // compute possible moves and captures
+                            possibleMoves = board.getPawnMoveBitboard(board.white, square);
                             possibleCaptures = pawnAttackTable[board.white][square] & board.getOccupiedBitboard(board.black);
-                            printf("POSSIBLE CAPTURES\n");
+                            if (board.getEnPassantSquare() >= 0)
+                                possibleCaptures |= (pawnAttackTable[board.white][square] & (1ULL << board.getEnPassantSquare()));
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
                         }
                         // can't capture your own piece
                         else
                         {
-                            printf("CANCEL - WHITE CANNOT CAPTURE WHITE PIECES\n");
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
                             possibleMoves = 0ULL;
                             possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
                         }
-                        clickedOnPiece = !clickedOnPiece;
                     }
-                    // black turn clicking on a white pawn
+                    // black turn trying to capture a white pawn
                     else
                     {
                         if (clickedOnPiece)
                         {
-                            // a piece is trying to capture this pawn
+                            // a piece is trying to capture white pawn
                             // check if it is a valid capture
-                            if (true)
+                            if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING WHITE PAWN\n");
-                                board.popPieceBitboard(toSquare);
+                                printf("CAPTURING WHITE PAWN\n"); // DEBUG
+                                board.popPieceBitboard(board.whitePawn, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, toSquare);
+                                board.setPieceBitboard(pieceSelected, square);
                                 board.updateOccupiedBitboards();
-                                clickedOnPiece = false;
-                                possibleMoves = 0ULL;
-                                possibleCaptures = 0ULL;
+                                board.updateEmptyBitboards();
+
+                                // switch side
                                 board.flipSide();
+                                fromSquare = -1;
                             }
                             else
                             {
-                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n");
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n"); // DEBUG
                             }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
                         }
                         else
                         {
-                            printf("DO NOTHING\n");
+                            printf("DO NOTHING\n"); // DEBUG
                         }
                     }
                 }
             }
             else if ((board.getBlackPawns() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackPawnImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // Generate moves
                     // black turn clicking on a black pawn
                     if (board.getSide() == board.black)
                     {
                         // hasn't clicked on a piece yet
-                        if (!clickedOnPiece)
+                        if (!clickedOnPiece || fromSquare != square)
                         {
                             fromSquare = square;
                             pieceSelected = board.blackPawn;
                             // compute possible moves or captures
-                            printf("SHOW POSSIBLE MOVES FOR BLACK PAWN %d\n", square);
-
+                            possibleMoves = board.getPawnMoveBitboard(board.black, square);
                             possibleCaptures = pawnAttackTable[board.black][square] & board.getOccupiedBitboard(board.white);
-                            printf("POSSIBLE CAPTURES\n");
+                            if (board.getEnPassantSquare() >= 0)
+                                possibleCaptures |= (pawnAttackTable[board.black][square] & (1ULL << board.getEnPassantSquare()));
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
                         }
                         // can't capture your own piece
                         else
                         {
-                            printf("CANCEL - WHITE CANNOT CAPTURE WHITE PIECES\n");
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
                             possibleMoves = 0ULL;
                             possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
                         }
-                        clickedOnPiece = !clickedOnPiece;
                     }
                     // white turn clicking on a black pawn
                     else
                     {
                         if (clickedOnPiece)
                         {
-                            // a piece is trying to capture this pawn
+                            // a piece is trying to capture black pawn
                             // check if it is a valid capture
-                            if (true)
+                            if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING WHITE PAWN\n");
-                                board.popPieceBitboard(toSquare);
+                                printf("CAPTURING BLACK PAWN\n"); // DEBUG
+                                board.popPieceBitboard(board.blackPawn, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, toSquare);
+                                board.setPieceBitboard(pieceSelected, square);
                                 board.updateOccupiedBitboards();
-                                clickedOnPiece = false;
-                                possibleMoves = 0ULL;
-                                possibleCaptures = 0ULL;
+                                board.updateEmptyBitboards();
+
+                                // switch side
                                 board.flipSide();
+                                fromSquare = -1;
                             }
                             else
                             {
-                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n");
+                                printf("CANCEL - NOT A VALID CAPTURE FOR WHITE\n"); // DEBUG
                             }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
                         }
                         else
                         {
-                            printf("DO NOTHING\n");
+                            printf("DO NOTHING\n"); // DEBUG
                         }
                     }
                 }
             }
             else if ((board.getWhiteKnights() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)whiteKnightImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whiteKnightImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // white turn clicking on a white knight
+                    if (board.getSide() == board.white)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.whiteKnight;
+                            // compute possible moves and captures
+                            possibleMoves = knightAttackTable[square] & board.getEmptyBitboard();
+                            possibleCaptures = knightAttackTable[square] & board.getOccupiedBitboard(board.black);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                        
+                    }
+                    // black turn trying to capture a white knight
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white knight
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING WHITE KNIGHT\n"); // DEBUG
+                                board.popPieceBitboard(board.whiteKnight, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getBlackKnights() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)blackKnightImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackKnightImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // black turn clicking on a black knight
+                    if (board.getSide() == board.black)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.blackKnight;
+                            // compute possible moves and captures
+                            possibleMoves = knightAttackTable[square] & board.getEmptyBitboard();
+                            possibleCaptures = knightAttackTable[square] & board.getOccupiedBitboard(board.white);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // white turn trying to capture a black knight
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture black knight
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING BLACK KNIGHT\n"); // DEBUG
+                                board.popPieceBitboard(board.blackKnight, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR WHITE\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getWhiteBishops() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)whiteBishopImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whiteBishopImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // white turn clicking on a white bishop
+                    if (board.getSide() == board.white)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.whiteBishop;
+                            // compute possible moves and captures
+                            U64 bishopMoves = board.getBishopAttackBitboard(board.getOccupiedBitboard(board.both), square);
+                            possibleMoves = bishopMoves & board.getEmptyBitboard();
+                            possibleCaptures = bishopMoves & board.getOccupiedBitboard(board.black);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // black turn trying to capture a white bishop
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white bishop
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING WHITE BISHOP\n"); // DEBUG
+                                board.popPieceBitboard(board.whiteBishop, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getBlackBishops() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)blackBishopImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackBishopImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // black turn clicking on a black bishop
+                    if (board.getSide() == board.black)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.blackBishop;
+                            // compute possible moves and captures
+                            U64 bishopMoves = board.getBishopAttackBitboard(board.getOccupiedBitboard(board.both), square);
+                            possibleMoves = bishopMoves & board.getEmptyBitboard();
+                            possibleCaptures = bishopMoves & board.getOccupiedBitboard(board.white);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // white turn trying to capture a black bishop
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture black bishop
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING BLACK BISHOP\n"); // DEBUG
+                                board.popPieceBitboard(board.blackBishop, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR WHITE\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getWhiteRooks() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)whiteRookImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whiteRookImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // white turn clicking on a white rook
+                    if (board.getSide() == board.white)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.whiteRook;
+                            // compute possible moves and captures
+                            U64 rookMoves = board.getRookAttackBitboard(board.getOccupiedBitboard(board.both), square);
+                            possibleMoves = rookMoves & board.getEmptyBitboard();
+                            possibleCaptures = rookMoves & board.getOccupiedBitboard(board.black);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // black turn trying to capture a white rook
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white rook
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING WHITE ROOK\n"); // DEBUG
+                                board.popPieceBitboard(board.whiteRook, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getBlackRooks() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)blackRookImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackRookImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // black turn clicking on a black rook
+                    if (board.getSide() == board.black)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.blackRook;
+                            // compute possible moves and captures
+                            U64 rookMoves = board.getRookAttackBitboard(board.getOccupiedBitboard(board.both), square);
+                            possibleMoves = rookMoves & board.getEmptyBitboard();
+                            possibleCaptures = rookMoves & board.getOccupiedBitboard(board.white);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // white turn trying to capture a black rook
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white rook
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING BLACK ROOK\n"); // DEBUG
+                                board.popPieceBitboard(board.blackRook, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR WHITE\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getWhiteQueens() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)whiteQueenImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whiteQueenImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // white turn clicking on a white queen
+                    if (board.getSide() == board.white)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.whiteQueen;
+                            // compute possible moves and captures
+                            U64 queenMoves = board.getQueenAttackBitboard(board.getOccupiedBitboard(board.both), square);
+                            possibleMoves = queenMoves & board.getEmptyBitboard();
+                            possibleCaptures = queenMoves & board.getOccupiedBitboard(board.black);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // black turn trying to capture a white queen
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white rook
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING WHITE QUEEN\n"); // DEBUG
+                                board.popPieceBitboard(board.whiteQueen, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getBlackQueens() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)blackQueenImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackQueenImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // black turn clicking on a black queen
+                    if (board.getSide() == board.black)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.blackQueen;
+                            // compute possible moves and captures
+                            U64 queenMoves = board.getQueenAttackBitboard(board.getOccupiedBitboard(board.both), square);
+                            possibleMoves = queenMoves & board.getEmptyBitboard();
+                            possibleCaptures = queenMoves & board.getOccupiedBitboard(board.white);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // white turn trying to capture a black queen
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white rook
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING BLACK QUEEN\n"); // DEBUG
+                                board.popPieceBitboard(board.blackQueen, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                                fromSquare = -1;
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR WHITE\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getWhiteKing() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)whiteKingImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)whiteKingImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // white turn clicking on a white king
+                    if (board.getSide() == board.white)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.whiteKing;
+                            // compute possible moves and captures
+                            possibleMoves = kingAttackTable[square] & board.getEmptyBitboard();
+                            possibleCaptures = kingAttackTable[square] & board.getOccupiedBitboard(board.black);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // black turn trying to capture a white king
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture white king
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING WHITE KING\n"); // DEBUG
+                                board.popPieceBitboard(board.whiteKing, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR BLACK\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
             else if ((board.getBlackKing() >> square) & 1ULL)
             {
-                //ImGui::Image((void*)(intptr_t)blackKingImageTexture, BOARD_TILE);
                 if (ImGui::ImageButton((void*)(intptr_t)blackKingImageTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
                 {
-                    // getting the selected square tile
-                    printf("Square: %d\n", square);
+                    // black turn clicking on a black king
+                    if (board.getSide() == board.black)
+                    {
+                        // hasn't clicked on a piece yet
+                        if (!clickedOnPiece || fromSquare != square)
+                        {
+                            fromSquare = square;
+                            pieceSelected = board.blackKing;
+                            // compute possible moves and captures
+                            possibleMoves = kingAttackTable[square] & board.getEmptyBitboard();
+                            possibleCaptures = kingAttackTable[square] & board.getOccupiedBitboard(board.white);
+
+                            clickedOnPiece = true;
+                            // no possible moves or captures, reset the click state
+                            if ((possibleMoves | possibleCaptures) == 0ULL)
+                            {
+                                printf("NO POSSIBLE MOVES OR CAPTURES\n"); // DEBUG
+                                clickedOnPiece = !clickedOnPiece;
+                                fromSquare = -1;
+                            }
+                        }
+                        // can't capture your own piece
+                        else
+                        {
+                            printf("CANCEL - RECLICKING SAME PIECE\n"); // DEBUG
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                            clickedOnPiece = !clickedOnPiece;
+                        }
+                    }
+                    // white turn trying to capture a black king
+                    else
+                    {
+                        if (clickedOnPiece)
+                        {
+                            // a piece is trying to capture black king
+                            // check if it is a valid capture
+                            if ((possibleCaptures >> square) & 1ULL)
+                            {
+                                printf("CAPTURING BLACK KING\n"); // DEBUG
+                                board.popPieceBitboard(board.blackKing, square);
+                                board.popPieceBitboard(pieceSelected, fromSquare);
+                                board.setPieceBitboard(pieceSelected, square);
+                                board.updateOccupiedBitboards();
+                                board.updateEmptyBitboards();
+
+                                // switch side
+                                board.flipSide();
+                            }
+                            else
+                            {
+                                printf("CANCEL - NOT A VALID CAPTURE FOR WHITE\n"); // DEBUG
+                            }
+
+                            // reset move state
+                            clickedOnPiece = false;
+                            possibleMoves = 0ULL;
+                            possibleCaptures = 0ULL;
+                            fromSquare = -1;
+                        }
+                        else
+                        {
+                            printf("DO NOTHING\n"); // DEBUG
+                        }
+                    }
                 }
             }
 

@@ -194,7 +194,7 @@ public:
         a3, b3, c3, d3, e3, f3, g3, h3,
         a2, b2, c2, d2, e2, f2, g2, h2,
         a1, b1, c1, d1, e1, f1, g1, h1,
-        noSquare
+        noSquare = -1
     };
     enum PieceColors {
         white,
@@ -277,6 +277,7 @@ public:
         setBlackKing(e8);
 
         updateOccupiedBitboards();
+        updateEmptyBitboards();
 
         for (int square = 0; square < 64; ++square)
         {
@@ -322,10 +323,10 @@ public:
     void printBitboard(U64 bitboard);
 
     // getters
-    U64 getEmptyBitboard() const;
+    U64 getEmptyBitboard() const { return m_emptyBitboard; };
     U64 getOccupiedBitboard(int side) const { return m_occupiedBitboard[side]; };
 
-    U64 getPieceBitboard(int pt) const;
+    U64 getPieceBitboard(int pt) const { return m_pieces[pt]; };
     U64 getWhitePawns() const { return m_pieces[whitePawn]; }
     U64 getBlackPawns() const { return m_pieces[blackPawn]; }
     U64 getWhiteKnights() const { return m_pieces[whiteKnight]; }
@@ -343,15 +344,18 @@ public:
     int getCastlingRights() const { return m_castle; }
 
     // setters
-    void setEmptyBitboard() const;
-    void setOccupiedBitboard(int side, U64 bitboard);
-    void setOccupiedBitboardSquare(int side, int square);
-    void clearOccupiedBitboardSquare(int side, int square);
+    void setEmptyBitboard(int square) { setBit(m_emptyBitboard, square); };
+    void updateEmptyBitboards() { m_emptyBitboard = ~m_occupiedBitboard[both]; };
+    void resetEmptyBitboards() { m_emptyBitboard = 0ULL; }
+    void addOccupiedBitboard(int side, U64 bitboard) { m_occupiedBitboard[side] |= bitboard; };
+    void setOccupiedBitboardSquare(int side, int square) { setBit(m_occupiedBitboard[side], square); };
+    void clearOccupiedBitboardSquare(int side, int square) { popBit(m_occupiedBitboard[side], square); };
     void updateOccupiedBitboards();
     void resetOccupiedBitboards();
+    void resetBoard();
 
     void setPieceBitboard(Board::PieceTypes pt, int square) { setBit(m_pieces[pt], square); };
-    void popPieceBitboard(int square) { for (int i = 0; i < 12; ++i) popBit(m_pieces[i], square); };
+    //void popPieceBitboard(int square) { for (int i = 0; i < 12; ++i) popBit(m_pieces[i], square); };
     void popPieceBitboard(Board::PieceTypes pt, int square) { popBit(m_pieces[pt], square); };
     void setWhitePawns(int square) { setBit(m_pieces[whitePawn], square); }
     void setBlackPawns(int square) { setBit(m_pieces[blackPawn], square); }
@@ -366,11 +370,11 @@ public:
     void setWhiteKing(int square) { setBit(m_pieces[whiteKing], square); }
     void setBlackKing(int square) { setBit(m_pieces[blackKing], square); }
     void setSide(bool side) { m_side = side; }
-    void flipSide() { m_side = !m_side; }
     void setEnPassantSquare(int square) { m_enPassant = square; }
     void setCastlingRights(int flags) { m_castle = flags; }
 
-    void resetBoard();
+    void flipSide() { m_side = !m_side; setEnPassantSquare(noSquare); }
+
 private:
     unsigned int m_random = 1804289383;
     U64 m_pieces[12];

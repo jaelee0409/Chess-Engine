@@ -33,14 +33,68 @@ U64 Board::getPawnAttackBitboard(int side, int square)
 U64 Board::getPawnMoveBitboard(int side, int square)
 {
     U64 moveBitboard = 0ULL;
+    int moveSquare = -1;
     // white turn
     if (!side)
     {
+        // if the white pawn is between 2nd rank and 7th rank
+        if (square >= a7 && square <= h2)
+        {
+            // if the white pawn is on the 2nd rank, you can double move
+            if (square >= a2 && square <= h2)
+            {
+                printf("WHITE PAWN 2ND RANK\n"); // DEBUG
+                moveSquare = square - 16;
+                // if no piece is blocking the pawn double move, it's a valid move
+                if (!(getBit(m_occupiedBitboard[both], moveSquare)) && !(getBit(m_occupiedBitboard[both], moveSquare + 8)))
+                    setBit(moveBitboard, moveSquare);
+            }
+
+            // single pawn move
+            moveSquare = square - 8;
+            // if no piece is blocking the pawn single move, it's a valid move
+            if (!(getBit(m_occupiedBitboard[both], moveSquare)))
+                setBit(moveBitboard, moveSquare);
+
+            // pawn promotion
+            if (square >= a7 && square <= h7)
+            {
+                // if no piece is blocking the pawn single move, promote the pawn
+                if (!(getBit(m_occupiedBitboard[both], moveSquare)))
+                    printf("WHITE PAWN PROMOTION\n"); // DEBUG
+            }
+        }
     }
     // black turn
     else
     {
+        // if the black pawn is between 2nd rank and 7th rank
+        if (square >= a7 && square <= h2)
+        {
+            // if the black pawn is on the 7nd rank, you can double move
+            if (square >= a7 && square <= h7)
+            {
+                printf("BLACK PAWN 7TH RANK\n");
+                moveSquare = square + 16;
+                // if no piece is blocking the pawn double move, it's a valid move
+                if (!(getBit(m_occupiedBitboard[both], moveSquare)) && !(getBit(m_occupiedBitboard[both], moveSquare - 8)))
+                    setBit(moveBitboard, moveSquare);
+            }
 
+            // single pawn move
+            moveSquare = square + 8;
+            // if no piece is blocking the pawn single move, it's a valid move
+            if (!(getBit(m_occupiedBitboard[both], moveSquare)))
+                setBit(moveBitboard, moveSquare);
+
+            // pawn promotion
+            if (square >= a2 && square <= h2)
+            {
+                // if no piece is blocking the pawn single move, promote the pawn
+                if (!(getBit(m_occupiedBitboard[both], moveSquare)))
+                    printf("BLACK PAWN PROMOTION\n"); // DEBUG
+            }
+        }
     }
 
     return moveBitboard;
@@ -414,7 +468,8 @@ U64 Board::findMagicNumber(int square, int maskBitCount, bool isBishop)
     {
         U64 magicNumber = generateMagicNumber();
 
-        if (countBits((maskBitboard * magicNumber) & 0xFF00000000000000) < 6) continue;
+        if (countBits((maskBitboard * magicNumber) & 0xFF00000000000000) < 6)
+            continue;
 
         int index, fail;
         memset(usedAttackBitboard, 0ULL, sizeof(usedAttackBitboard));
@@ -438,12 +493,11 @@ U64 Board::findMagicNumber(int square, int maskBitCount, bool isBishop)
             {
                 return magicNumber;
             }
-                
         }
-
-        printf("Magic Number Failed\n");
-        return 0ULL;
     }
+
+    printf("Magic Number Failed\n");
+    return 0ULL;
 }
 
 void Board::initMagicNumbers()
@@ -497,31 +551,6 @@ void Board::printBitboard(U64 bitboard)
     printf("\n   a b c d e f g h\n\n");
 }
 
-U64 Board::getPieceBitboard(int pt) const
-{
-    return m_pieces[pt];
-}
-
-U64 Board::getEmptyBitboard() const
-{
-    return m_emptyBitboard;
-}
-
-void Board::setOccupiedBitboard(int side, U64 bitboard)
-{
-    m_occupiedBitboard[side] |= bitboard;
-}
-
-void Board::setOccupiedBitboardSquare(int side, int square)
-{
-    setBit(m_occupiedBitboard[side], square);
-}
-
-void Board::clearOccupiedBitboardSquare(int side, int square)
-{
-    popBit(m_occupiedBitboard[side], square);
-}
-
 void Board::updateOccupiedBitboards()
 {
     resetOccupiedBitboards();
@@ -529,16 +558,16 @@ void Board::updateOccupiedBitboards()
     for (int i = 0; i < 12; ++i)
     {
         // both
-        setOccupiedBitboard(both, m_pieces[i]);
+        addOccupiedBitboard(both, m_pieces[i]);
         // white pieces
         if (i % 2 == 0)
         {
-            setOccupiedBitboard(white, m_pieces[i]);
+            addOccupiedBitboard(white, m_pieces[i]);
         }
         // black pieces
         else
         {
-            setOccupiedBitboard(black, m_pieces[i]);
+            addOccupiedBitboard(black, m_pieces[i]);
         }
     }
 }
@@ -555,8 +584,7 @@ void Board::resetBoard()
         m_pieces[i] = 0ULL;
 
     resetOccupiedBitboards();
-
-    m_emptyBitboard = 0ULL;
+    resetEmptyBitboards();
 
     m_side = white;
     m_enPassant = noSquare;
