@@ -11,3 +11,9 @@
 - Dear ImGui
 - GLFW
 - OPENGL3
+
+## TODO
+
+- Castling
+- Check and Checkmate
+- Pinned piece
