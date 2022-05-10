@@ -17,3 +17,4 @@
 - Castling
 - Check and Checkmate
 - Pinned piece
+- Pawn promotion piece choices (Right now the game always promotes to a Queen)

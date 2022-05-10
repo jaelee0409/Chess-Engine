@@ -472,6 +472,14 @@ void runGameLoop(GLFWwindow* window)
                                 }
                                 else
                                 {
+                                    if (fromSquare - square == 8 && square >= board.a8 && square <= board.h8)
+                                    {
+                                        printf("WHITE PAWN MOVE PROMOTION\n"); // DEBUG
+                                        board.popPieceBitboard(board.whitePawn, square);
+                                        board.setPieceBitboard(board.whiteQueen, square);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+                                    }
                                     board.setEnPassantSquare(board.noSquare);
                                 }
                             }
@@ -484,6 +492,14 @@ void runGameLoop(GLFWwindow* window)
                                 }
                                 else
                                 {
+                                    if (square - fromSquare == 8 && square >= board.a1 && square <= board.h1)
+                                    {
+                                        printf("BLACK PAWN MOVE PROMOTION\n"); // DEBUG
+                                        board.popPieceBitboard(board.blackPawn, square);
+                                        board.setPieceBitboard(board.blackQueen, square);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+                                    }
                                     board.setEnPassantSquare(board.noSquare);
                                 }
                             }
@@ -741,10 +757,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING WHITE KNIGHT\n"); // DEBUG
                                 board.popPieceBitboard(board.whiteKnight, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.blackPawn && (square - fromSquare == 7 || square - fromSquare == 9))
+                                {
+                                    printf("CAPTURING WHITE KNIGHT AND PROMOTING BLACK PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.blackQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING WHITE KNIGHT\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -814,10 +838,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING BLACK KNIGHT\n"); // DEBUG
                                 board.popPieceBitboard(board.blackKnight, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.whitePawn && (fromSquare - square == 7 || fromSquare - square == 9))
+                                {
+                                    printf("CAPTURING BLACK KNIGHT AND PROMOTING WHITE PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.whiteQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING BLACK KNIGHT\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -888,10 +920,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING WHITE BISHOP\n"); // DEBUG
                                 board.popPieceBitboard(board.whiteBishop, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.blackPawn && (square - fromSquare == 7 || square - fromSquare == 9))
+                                {
+                                    printf("CAPTURING WHITE BISHOP AND PROMOTING BLACK PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.blackQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING WHITE BISHOP\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -962,10 +1002,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING BLACK BISHOP\n"); // DEBUG
                                 board.popPieceBitboard(board.blackBishop, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.whitePawn && (fromSquare - square == 7 || fromSquare - square == 9))
+                                {
+                                    printf("CAPTURING BLACK BISHOP AND PROMOTING WHITE PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.whiteQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING BLACK BISHOP\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -1036,10 +1084,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING WHITE ROOK\n"); // DEBUG
                                 board.popPieceBitboard(board.whiteRook, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.blackPawn && (square - fromSquare == 7 || square - fromSquare == 9))
+                                {
+                                    printf("CAPTURING WHITE ROOK AND PROMOTING BLACK PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.blackQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING WHITE ROOK\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -1110,10 +1166,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING BLACK ROOK\n"); // DEBUG
                                 board.popPieceBitboard(board.blackRook, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.whitePawn && (fromSquare - square == 7 || fromSquare - square == 9))
+                                {
+                                    printf("CAPTURING BLACK ROOK AND PROMOTING WHITE PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.whiteQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING BLACK ROOK\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -1184,10 +1248,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING WHITE QUEEN\n"); // DEBUG
                                 board.popPieceBitboard(board.whiteQueen, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.blackPawn && (square - fromSquare == 7 || square - fromSquare == 9))
+                                {
+                                    printf("CAPTURING WHITE QUEEN AND PROMOTING BLACK PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.blackQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING WHITE QUEEN\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
@@ -1258,10 +1330,18 @@ void runGameLoop(GLFWwindow* window)
                             // check if it is a valid capture
                             if ((possibleCaptures >> square) & 1ULL)
                             {
-                                printf("CAPTURING BLACK QUEEN\n"); // DEBUG
                                 board.popPieceBitboard(board.blackQueen, square);
                                 board.popPieceBitboard(pieceSelected, fromSquare);
-                                board.setPieceBitboard(pieceSelected, square);
+                                if (pieceSelected == board.whitePawn && (fromSquare - square == 7 || fromSquare - square == 9))
+                                {
+                                    printf("CAPTURING BLACK QUEEN AND PROMOTING WHITE PAWN\n"); // DEBUG
+                                    board.setPieceBitboard(board.whiteQueen, square);
+                                }
+                                else
+                                {
+                                    printf("CAPTURING BLACK QUEEN\n"); // DEBUG
+                                    board.setPieceBitboard(pieceSelected, square);
+                                }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 

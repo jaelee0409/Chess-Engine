@@ -55,14 +55,6 @@ U64 Board::getPawnMoveBitboard(int side, int square)
             // if no piece is blocking the pawn single move, it's a valid move
             if (!(getBit(m_occupiedBitboard[both], moveSquare)))
                 setBit(moveBitboard, moveSquare);
-
-            // pawn promotion
-            if (square >= a7 && square <= h7)
-            {
-                // if no piece is blocking the pawn single move, promote the pawn
-                if (!(getBit(m_occupiedBitboard[both], moveSquare)))
-                    printf("WHITE PAWN PROMOTION\n"); // DEBUG
-            }
         }
     }
     // black turn
@@ -86,14 +78,6 @@ U64 Board::getPawnMoveBitboard(int side, int square)
             // if no piece is blocking the pawn single move, it's a valid move
             if (!(getBit(m_occupiedBitboard[both], moveSquare)))
                 setBit(moveBitboard, moveSquare);
-
-            // pawn promotion
-            if (square >= a2 && square <= h2)
-            {
-                // if no piece is blocking the pawn single move, promote the pawn
-                if (!(getBit(m_occupiedBitboard[both], moveSquare)))
-                    printf("BLACK PAWN PROMOTION\n"); // DEBUG
-            }
         }
     }
 
