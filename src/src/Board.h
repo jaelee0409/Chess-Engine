@@ -216,13 +216,20 @@ public:
         whiteKing,
         blackKing
     };
+    // Castling Flags
+    // 0001 whiteKingSide
+    // 0010 whiteQueenSide
+    // 0100 blackKingSide
+    // 1000 blackQueenSide
+    // 1111 allSide
     enum CastleFlags
     {
         none = 0,
         whiteKingSide = 1,
         whiteQueenSide = 2,
         blackKingSide = 4,
-        blackQueenSide = 8
+        blackQueenSide = 8,
+        allSide = 15
     };
 
     Board()

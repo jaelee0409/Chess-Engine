@@ -10,11 +10,10 @@
 - Visual Studio 2019
 - Dear ImGui
 - GLFW
-- OPENGL3
+- OpenGL 3
 
 ## TODO
 
-- Castling
 - Check and Checkmate
 - Pinned piece
 - Pawn promotion piece choices (Right now the game always promotes to a Queen)

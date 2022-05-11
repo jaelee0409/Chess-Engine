@@ -436,7 +436,7 @@ void runGameLoop(GLFWwindow* window)
             else if (fromSquare == square)
                 bg = selectedTile;
 
-            // empty tile
+            // clicked on an empty square
             if (((board.getOccupiedBitboard(board.both) >> square) & 1ULL) == 0)
             {
                 if (ImGui::ImageButton((void*)(intptr_t)blankTexture, BOARD_TILE, uv0, uv1, 0, bg, noTint))
@@ -470,6 +470,7 @@ void runGameLoop(GLFWwindow* window)
                                     printf("SETTING EN PASSANT SQUARE\n"); // DEBUG
                                     board.setEnPassantSquare(square + 8);
                                 }
+                                // pawn promotion
                                 else
                                 {
                                     if (fromSquare - square == 8 && square >= board.a8 && square <= board.h8)
@@ -502,6 +503,66 @@ void runGameLoop(GLFWwindow* window)
                                     }
                                     board.setEnPassantSquare(board.noSquare);
                                 }
+                            }
+                            // white castling
+                            else if (pieceSelected == board.whiteKing)
+                            {
+                                if (square == board.g1 && fromSquare == board.e1)
+                                {
+                                    if (board.getCastlingRights() & board.whiteKingSide)
+                                    {
+                                        printf("WHITE KING SIDE CASTLE AVAILABLE\n"); // DEBUG
+                                        board.popPieceBitboard(board.whiteRook, board.h1);
+                                        board.setPieceBitboard(board.whiteRook, board.f1);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+                                        board.setEnPassantSquare(board.noSquare);
+                                    }
+                                }
+                                else if (square == board.c1 && fromSquare == board.e1)
+                                {
+                                    if (board.getCastlingRights() & board.whiteQueenSide)
+                                    {
+                                        printf("WHITE QUEEN SIDE CASTLE AVAILABLE\n"); // DEBUG
+                                        board.popPieceBitboard(board.whiteRook, board.a1);
+                                        board.setPieceBitboard(board.whiteRook, board.d1);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+                                        board.setEnPassantSquare(board.noSquare);
+                                    }
+                                }
+                                // white king moved, white can't castle now
+                                board.setCastlingRights(board.getCastlingRights() & 12);
+                            }
+                            // black castling
+                            else if (pieceSelected == board.blackKing)
+                            {
+                                if (square == board.g8 && fromSquare == board.e8)
+                                {
+                                    if (board.getCastlingRights() & board.blackKingSide)
+                                    {
+                                        printf("BLACK KING SIDE CASTLE AVAILABLE\n"); // DEBUG
+                                        board.popPieceBitboard(board.blackRook, board.h8);
+                                        board.setPieceBitboard(board.blackRook, board.f8);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+                                        board.setEnPassantSquare(board.noSquare);
+                                    }
+                                }
+                                else if (square == board.c8 && fromSquare == board.e8)
+                                {
+                                    if (board.getCastlingRights() & board.blackQueenSide)
+                                    {
+                                        printf("BLACK QUEEN SIDE CASTLE AVAILABLE\n"); // DEBUG
+                                        board.popPieceBitboard(board.blackRook, board.a8);
+                                        board.setPieceBitboard(board.blackRook, board.d8);
+                                        board.updateOccupiedBitboards();
+                                        board.updateEmptyBitboards();
+                                        board.setEnPassantSquare(board.noSquare);
+                                    }
+                                }
+                                // black king moved, black can't castle now
+                                board.setCastlingRights(board.getCastlingRights() & 3);
                             }
                             else
                             {
@@ -615,6 +676,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
+                                if (pieceSelected == board.blackKing)
+                                {
+                                    // black king moved, black can't castle now
+                                    printf("BLACK KING MOVED TO CAPTURE A PIECE - BLACK CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 3);
+                                }
+
                                 // switch side
                                 board.flipSide();
                                 fromSquare = -1;
@@ -689,6 +757,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.setPieceBitboard(pieceSelected, square);
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
+
+                                if (pieceSelected == board.whiteKing)
+                                {
+                                    // white king moved, white can't castle now
+                                    printf("WHITE KING MOVED TO CAPTURE A PIECE - WHITE CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 12);
+                                }
 
                                 // switch side
                                 board.flipSide();
@@ -772,6 +847,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
+                                if (pieceSelected == board.blackKing)
+                                {
+                                    // black king moved, black can't castle now
+                                    printf("BLACK KING MOVED TO CAPTURE A PIECE - BLACK CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 3);
+                                }
+
                                 // switch side
                                 board.flipSide();
                                 fromSquare = -1;
@@ -852,6 +934,13 @@ void runGameLoop(GLFWwindow* window)
                                 }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
+
+                                if (pieceSelected == board.whiteKing)
+                                {
+                                    // white king moved, white can't castle now
+                                    printf("WHITE KING MOVED TO CAPTURE A PIECE - WHITE CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 12);
+                                }
 
                                 // switch side
                                 board.flipSide();
@@ -935,6 +1024,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
+                                if (pieceSelected == board.blackKing)
+                                {
+                                    // black king moved, black can't castle now
+                                    printf("BLACK KING MOVED TO CAPTURE A PIECE - BLACK CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 3);
+                                }
+
                                 // switch side
                                 board.flipSide();
                                 fromSquare = -1;
@@ -1016,6 +1112,13 @@ void runGameLoop(GLFWwindow* window)
                                 }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
+
+                                if (pieceSelected == board.whiteKing)
+                                {
+                                    // white king moved, white can't castle now
+                                    printf("WHITE KING MOVED TO CAPTURE A PIECE - WHITE CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 12);
+                                }
 
                                 // switch side
                                 board.flipSide();
@@ -1099,6 +1202,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
+                                if (pieceSelected == board.blackKing)
+                                {
+                                    // black king moved, black can't castle now
+                                    printf("BLACK KING MOVED TO CAPTURE A PIECE - BLACK CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 3);
+                                }
+
                                 // switch side
                                 board.flipSide();
                                 fromSquare = -1;
@@ -1180,6 +1290,13 @@ void runGameLoop(GLFWwindow* window)
                                 }
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
+
+                                if (pieceSelected == board.whiteKing)
+                                {
+                                    // white king moved, white can't castle now
+                                    printf("WHITE KING MOVED TO CAPTURE A PIECE - WHITE CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 12);
+                                }
 
                                 // switch side
                                 board.flipSide();
@@ -1263,6 +1380,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
+                                if (pieceSelected == board.blackKing)
+                                {
+                                    // black king moved, black can't castle now
+                                    printf("BLACK KING MOVED TO CAPTURE A PIECE - BLACK CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 3);
+                                }
+
                                 // switch side
                                 board.flipSide();
                                 fromSquare = -1;
@@ -1345,6 +1469,13 @@ void runGameLoop(GLFWwindow* window)
                                 board.updateOccupiedBitboards();
                                 board.updateEmptyBitboards();
 
+                                if (pieceSelected == board.whiteKing)
+                                {
+                                    // white king moved, white can't castle now
+                                    printf("WHITE KING MOVED TO CAPTURE A PIECE - WHITE CANNOT CASTLE NOW\n"); // DEBUG
+                                    board.setCastlingRights(board.getCastlingRights() & 12);
+                                }
+
                                 // switch side
                                 board.flipSide();
                                 fromSquare = -1;
@@ -1380,8 +1511,41 @@ void runGameLoop(GLFWwindow* window)
                             fromSquare = square;
                             pieceSelected = board.whiteKing;
                             // compute possible moves and captures
-                            possibleMoves = kingAttackTable[square] & board.getEmptyBitboard();
+                            U64 emptyBitboard = board.getEmptyBitboard();
+                            possibleMoves = kingAttackTable[square] & emptyBitboard;
                             possibleCaptures = kingAttackTable[square] & board.getOccupiedBitboard(board.black);
+
+                            // compute possible castling
+                            if (board.getCastlingRights() & board.whiteKingSide)
+                            {
+                                // white king side castling
+                                if ((emptyBitboard >> board.f1) & 1 && (emptyBitboard >> board.g1) & 1)
+                                {
+                                    // the castling squares are empty
+                                    printf("WHITE KING SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                    possibleMoves |= (1ULL << board.g1);
+                                }
+                                else
+                                {
+                                    printf("WHITE KING SIDE CASTLING IS NOT POSSIBLE - A PIECE IS BLOCKING THE WAY\n"); // DEBUG
+                                }
+                            }
+
+                            // compute possible castling
+                            if (board.getCastlingRights() & board.whiteQueenSide)
+                            {
+                                // white queen side castling
+                                if ((emptyBitboard >> board.b1) & 1 && (emptyBitboard >> board.c1) & 1 && (emptyBitboard >> board.d1) & 1)
+                                {
+                                    // the castling squares are empty
+                                    printf("WHITE QUEEN SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                    possibleMoves |= (1ULL << board.c1);
+                                }
+                                else
+                                {
+                                    printf("WHITE QUEEN SIDE CASTLING IS NOT POSSIBLE - A PIECE IS BLOCKING THE WAY\n"); // DEBUG
+                                }
+                            }
 
                             clickedOnPiece = true;
                             // no possible moves or captures, reset the click state
@@ -1452,8 +1616,41 @@ void runGameLoop(GLFWwindow* window)
                             fromSquare = square;
                             pieceSelected = board.blackKing;
                             // compute possible moves and captures
-                            possibleMoves = kingAttackTable[square] & board.getEmptyBitboard();
+                            U64 emptyBitboard = board.getEmptyBitboard();
+                            possibleMoves = kingAttackTable[square] & emptyBitboard;
                             possibleCaptures = kingAttackTable[square] & board.getOccupiedBitboard(board.white);
+
+                            // compute possible castling
+                            if (board.getCastlingRights() & board.blackKingSide)
+                            {
+                                // black king side castling
+                                if ((emptyBitboard >> board.f8) & 1 && (emptyBitboard >> board.g8) & 1)
+                                {
+                                    // the castling squares are empty
+                                    printf("BLACK KING SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                    possibleMoves |= (1ULL << board.g8);
+                                }
+                                else
+                                {
+                                    printf("BLACK KING SIDE CASTLING IS NOT POSSIBLE - A PIECE IS BLOCKING THE WAY\n"); // DEBUG
+                                }
+                            }
+
+                            // compute possible castling
+                            if (board.getCastlingRights() & board.blackQueenSide)
+                            {
+                                // black queen side castling
+                                if ((emptyBitboard >> board.b8) & 1 && (emptyBitboard >> board.c8) & 1 && (emptyBitboard >> board.d8) & 1)
+                                {
+                                    // the castling squares are empty
+                                    printf("BLACK QUEEN SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                    possibleMoves |= (1ULL << board.c8);
+                                }
+                                else
+                                {
+                                    printf("BLACK QUEEN SIDE CASTLING IS NOT POSSIBLE - A PIECE IS BLOCKING THE WAY\n"); // DEBUG
+                                }
+                            }
 
                             clickedOnPiece = true;
                             // no possible moves or captures, reset the click state

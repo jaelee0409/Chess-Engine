@@ -572,5 +572,5 @@ void Board::resetBoard()
 
     m_side = white;
     m_enPassant = noSquare;
-    m_castle = none;
+    m_castle = allSide;
 }
