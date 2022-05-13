@@ -363,9 +363,9 @@ bool Board::isSquareAttacked(int side, int square)
     // white
     if (side == white)
     {
-        if (pawnAttackTable[black][square] & m_pieces[whitePawn])
+        if (getPawnAttackBitboard(black, square) & m_pieces[whitePawn])
             return true;
-        else if (knightAttackTable[square] & m_pieces[whiteKnight])
+        else if (getKnightAttackBitboard(square) & m_pieces[whiteKnight])
             return true;
         else if (getBishopAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[whiteBishop])
             return true;
@@ -373,15 +373,15 @@ bool Board::isSquareAttacked(int side, int square)
             return true;
         else if (getQueenAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[whiteQueen])
             return true;
-        else if (kingAttackTable[square] & m_pieces[whiteKing])
+        else if (getKingAttackBitboard(square) & m_pieces[whiteKing])
             return true;
     }
     // black
     else
     {
-        if (pawnAttackTable[white][square] & m_pieces[blackPawn])
+        if (getPawnAttackBitboard(white, square) & m_pieces[blackPawn])
             return true;
-        else if (knightAttackTable[square] & m_pieces[blackKnight])
+        else if (getKnightAttackBitboard(square) & m_pieces[blackKnight])
             return true;
         else if (getBishopAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[blackBishop])
             return true;
@@ -389,7 +389,7 @@ bool Board::isSquareAttacked(int side, int square)
             return true;
         else if (getQueenAttackBitboard(getOccupiedBitboard(both), square) & m_pieces[blackQueen])
             return true;
-        else if (kingAttackTable[square] & m_pieces[blackKing])
+        else if (getKingAttackBitboard(square) & m_pieces[blackKing])
             return true;
     }
 

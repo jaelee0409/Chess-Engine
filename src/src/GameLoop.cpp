@@ -382,7 +382,7 @@ void runGameLoop(GLFWwindow* window)
                 printf("ERROR: INCORRECT FEN STRING\n"); // DEBUG
 
             // clear input text field
-            strcpy(input, "");
+            strcpy_s(input, "");
         }
 
         ImGui::SameLine();
@@ -1522,8 +1522,16 @@ void runGameLoop(GLFWwindow* window)
                                 if ((emptyBitboard >> board.f1) & 1 && (emptyBitboard >> board.g1) & 1)
                                 {
                                     // the castling squares are empty
-                                    printf("WHITE KING SIDE CASTLING IS POSSIBLE\n"); // DEBUG
-                                    possibleMoves |= (1ULL << board.g1);
+                                    // check if the castling squares are attacked
+                                    if (!(board.isSquareAttacked(board.black, board.e1)) && !(board.isSquareAttacked(board.black, board.f1)))
+                                    {
+                                        printf("WHITE KING SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                        possibleMoves |= (1ULL << board.g1);
+                                    }
+                                    else
+                                    {
+                                        printf("WHITE KING SIDE CASTLING IS NOT POSSIBLE - ONE OF THE CASTLING SQUARES ARE ATTACKED\n"); // DEBUG
+                                    }
                                 }
                                 else
                                 {
@@ -1538,8 +1546,16 @@ void runGameLoop(GLFWwindow* window)
                                 if ((emptyBitboard >> board.b1) & 1 && (emptyBitboard >> board.c1) & 1 && (emptyBitboard >> board.d1) & 1)
                                 {
                                     // the castling squares are empty
-                                    printf("WHITE QUEEN SIDE CASTLING IS POSSIBLE\n"); // DEBUG
-                                    possibleMoves |= (1ULL << board.c1);
+                                    // check if the castling squares are attacked
+                                    if (!(board.isSquareAttacked(board.black, board.e1)) && !(board.isSquareAttacked(board.black, board.d1)))
+                                    {
+                                        printf("WHITE QUEEN SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                        possibleMoves |= (1ULL << board.c1);
+                                    }
+                                    else
+                                    {
+                                        printf("WHITE QUEEN SIDE CASTLING IS NOT POSSIBLE - ONE OF THE CASTLING SQUARES ARE ATTACKED\n"); // DEBUG
+                                    }
                                 }
                                 else
                                 {
@@ -1627,8 +1643,16 @@ void runGameLoop(GLFWwindow* window)
                                 if ((emptyBitboard >> board.f8) & 1 && (emptyBitboard >> board.g8) & 1)
                                 {
                                     // the castling squares are empty
-                                    printf("BLACK KING SIDE CASTLING IS POSSIBLE\n"); // DEBUG
-                                    possibleMoves |= (1ULL << board.g8);
+                                    // check if the castling squares are attacked
+                                    if (!(board.isSquareAttacked(board.white, board.e8)) && !(board.isSquareAttacked(board.white, board.f8)))
+                                    {
+                                        printf("BLACK KING SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                        possibleMoves |= (1ULL << board.g8);
+                                    }
+                                    else
+                                    {
+                                        printf("BLACK KING SIDE CASTLING IS NOT POSSIBLE - ONE OF THE CASTLING SQUARES ARE ATTACKED\n"); // DEBUG
+                                    }
                                 }
                                 else
                                 {
@@ -1643,8 +1667,16 @@ void runGameLoop(GLFWwindow* window)
                                 if ((emptyBitboard >> board.b8) & 1 && (emptyBitboard >> board.c8) & 1 && (emptyBitboard >> board.d8) & 1)
                                 {
                                     // the castling squares are empty
-                                    printf("BLACK QUEEN SIDE CASTLING IS POSSIBLE\n"); // DEBUG
-                                    possibleMoves |= (1ULL << board.c8);
+                                    // check if the castling squares are attacked
+                                    if (!(board.isSquareAttacked(board.white, board.e8)) && !(board.isSquareAttacked(board.white, board.d8)))
+                                    {
+                                        printf("BLACK QUEEN SIDE CASTLING IS POSSIBLE\n"); // DEBUG
+                                        possibleMoves |= (1ULL << board.c8);
+                                    }
+                                    else
+                                    {
+                                        printf("BLACK QUEEN SIDE CASTLING IS NOT POSSIBLE - ONE OF THE CASTLING SQUARES ARE ATTACKED\n"); // DEBUG
+                                    }
                                 }
                                 else
                                 {
